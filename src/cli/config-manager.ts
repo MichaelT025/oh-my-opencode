@@ -274,6 +274,7 @@ export function generateOmoConfig(installConfig: InstallConfig): Record<string, 
   }
 
   agents["librarian"] = { model: "opencode/glm-4.7-free" }
+  agents["code-implementer"] = { model: "opencode/glm-4.7-free" }
 
   // Gemini models use `antigravity-` prefix for explicit Antigravity quota routing
   // @see ANTIGRAVITY_PROVIDER_CONFIG comments for rationale

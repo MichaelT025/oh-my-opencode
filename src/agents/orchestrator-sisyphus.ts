@@ -118,6 +118,7 @@ function buildDecisionMatrix(agents: AvailableAgent[], userCategories?: Record<s
   const agentNames = agents.map((a) => a.name)
   if (agentNames.includes("oracle")) rows.push("| Code review / architecture | `agent=\"oracle\"` |")
   if (agentNames.includes("explore")) rows.push("| Find code in codebase | `agent=\"explore\"` |")
+  if (agentNames.includes("code-implementer")) rows.push("| Implementation (TDD) | `agent=\"code-implementer\"` |")
   if (agentNames.includes("librarian")) rows.push("| Look up library docs | `agent=\"librarian\"` |")
   rows.push("| Git commit | `agent=\"git-master\"` |")
   rows.push("| Debug complex issue | `agent=\"debugging-master\"` |")

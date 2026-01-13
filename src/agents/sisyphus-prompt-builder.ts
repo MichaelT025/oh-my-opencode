@@ -330,3 +330,16 @@ export function buildUltraworkAgentSection(agents: AvailableAgent[]): string {
 
   return lines.join("\n")
 }
+
+export function buildDedicatedSections(agents: AvailableAgent[]): string {
+  const sections: string[] = []
+  
+  for (const agent of agents) {
+    if (agent.metadata.dedicatedSection) {
+      sections.push(agent.metadata.dedicatedSection)
+    }
+  }
+
+  return sections.join("\n\n")
+}
+

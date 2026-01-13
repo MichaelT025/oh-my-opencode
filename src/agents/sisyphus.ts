@@ -11,6 +11,7 @@ import {
   buildOracleSection,
   buildHardBlocksSection,
   buildAntiPatternsSection,
+  buildDedicatedSections,
   categorizeTools,
 } from "./sisyphus-prompt-builder"
 
@@ -534,6 +535,7 @@ function buildDynamicSisyphusPrompt(
   const frontendSection = buildFrontendSection(availableAgents)
   const delegationTable = buildDelegationTable(availableAgents)
   const oracleSection = buildOracleSection(availableAgents)
+  const dedicatedSections = buildDedicatedSections(availableAgents)
   const hardBlocks = buildHardBlocksSection(availableAgents)
   const antiPatterns = buildAntiPatternsSection(availableAgents)
 
@@ -590,6 +592,8 @@ function buildDynamicSisyphusPrompt(
     "</Behavior_Instructions>",
     "",
     oracleSection,
+    "",
+    dedicatedSections,
     "",
     SISYPHUS_TASK_MANAGEMENT,
     "",
