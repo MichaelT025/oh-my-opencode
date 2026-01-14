@@ -72,6 +72,16 @@ describe("createBuiltinAgents with model overrides", () => {
     expect(agents.oracle.textVerbosity).toBeUndefined()
   })
 
+  test("code-implementer is available as both primary and subagent", () => {
+    // #given - default agents
+
+    // #when
+    const agents = createBuiltinAgents()
+
+    // #then
+    expect(agents["code-implementer"].mode).toBe("all")
+  })
+
   test("non-model overrides are still applied after factory rebuild", () => {
     // #given
     const overrides = {

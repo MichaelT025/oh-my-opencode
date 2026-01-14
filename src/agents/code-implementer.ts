@@ -44,7 +44,7 @@ export function createCodeImplementerAgent(model: string = DEFAULT_MODEL): Agent
   return {
     description:
       "Primary Code Implementer. Strict TDD, clean code, no fluff. Uses GLM-4.7.",
-    mode: "subagent" as const,
+    mode: "all" as const,
     model,
     temperature: 0.1,
     ...restrictions,
