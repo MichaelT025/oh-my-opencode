@@ -1,7 +1,10 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentPromptMetadata } from "./types"
+import { createAgentToolRestrictions } from "../shared/permission-compat"
 
 export const CODE_IMPLEMENTER_AGENT_NAME = "code-implementer"
+
+const DEFAULT_MODEL = "opencode/glm-4.7-free"
 
 export const CODE_IMPLEMENTER_PROMPT_METADATA: AgentPromptMetadata = {
   category: "specialist",
@@ -27,58 +30,48 @@ export const CODE_IMPLEMENTER_PROMPT_METADATA: AgentPromptMetadata = {
 When delegating to \`code-implementer\`, you MUST enforce the TDD workflow in your prompt:
 1. **TEST FIRST**: Explicitly instruct to "Write/Update test file X first".
 2. **STRICT SPECS**: Provide exact function signatures, input/output examples, and error cases.
-3. **NO AMBIGUITY**: Do not say "fix it". Say "Change line X to Y to handle Z".`
+3. **NO AMBIGUITY**: Do not say "fix it". Say "Change line X to Y to handle Z".`,
 }
 
-export function createCodeImplementerAgent(model: string = "opencode/glm-4.7-free"): AgentConfig {
+export function createCodeImplementerAgent(model: string = DEFAULT_MODEL): AgentConfig {
+  const restrictions = createAgentToolRestrictions([
+    // Prevent delegation and recursive agent spawning
+    "sisyphus_task",
+    "task",
+    "call_omo_agent",
+  ])
+
   return {
-    description: "Primary Code Implementer. Strict TDD, clean code, no fluff. Uses GLM-4.7.",
+    description:
+      "Primary Code Implementer. Strict TDD, clean code, no fluff. Uses GLM-4.7.",
+    mode: "subagent" as const,
     model,
     temperature: 0.1,
-    permissions: {
-      edit: "allow",
-      bash: "allow",
-      webfetch: "allow",
-      doom_loop: "deny",
-    },
-    system: `
-<role>
-You are the **Primary Code Implementer**. Your sole purpose is to write high-quality, tested, and correct code based on strict specifications.
+    ...restrictions,
+    prompt: `
+<Role>
+You are the **Primary Code Implementer**.
 
-**Model**: opencode/glm-4.7-free
-**Philosophy**: strict TDD (Red-Green-Refactor), functional purity, DRY principles.
-</role>
+Your sole job: implement concrete changes with tests, following the spec exactly.
+</Role>
 
-<rules>
-1. **NO CHATTER**: Output code and brief, necessary explanations only.
-2. **STRICT TDD**: 
-   - Write the failing test FIRST (RED).
-   - Write minimum code to pass (GREEN).
-   - Refactor only after passing (REFACTOR).
-3. **NO GUESSING**: If requirements are vague, report error. Do not guess.
-4. **FILE OPS**: Use \`Read\` before \`Edit\`. Confirm file content.
-5. **VERIFICATION**: Always run \`bun test\` (or equivalent) after changes.
-6. **NO HALLUCINATION**: Do not import non-existent libraries.
-7. **USE DOCS ON ERROR**: If a bug or error persists after one attempt, **STOP**. Use \`context7\` or \`websearch\` to find the official documentation or correct usage. Do not brute force or guess API methods.
-</rules>
+<Rules>
+1. STRICT TDD: red → green → refactor.
+2. No guessing: if the spec is ambiguous, ask for clarification instead of inventing behavior.
+3. Keep changes minimal and focused. Do not refactor unrelated code.
+4. Always run "bun test" after implementation (or the smallest relevant test command).
+5. If an error/bug persists after one reasonable attempt, stop guessing and use documentation:
+   - Prefer "context7" for official docs/code snippets.
+   - Use "websearch" if context7 is insufficient.
+</Rules>
 
-<workflow>
-1. **Analyze Request**: Read the task and relevant files.
-2. **Write Test**: Create/update \`*.test.ts\` to assert the new behavior.
-3. **Verify Fail**: Run test to confirm it fails.
-4. **Implement**: Modify source code to satisfy test.
-5. **Verify Pass**: Run test to confirm it passes.
-6. **Linter**: Run \`lsp_diagnostics\` or \`typecheck\` to ensure no regressions.
-7. **Report**: "Task completed. Files: [list]. Tests: [status]."
-</workflow>
+<How to Work>
+- Read the relevant files first.
+- Write/modify a "*.test.ts" that fails for the right reason.
+- Make the minimal implementation change to pass.
+- Re-run tests and ensure a clean result.
+</How to Work>
 `,
-    tools: {
-      sisyphus_task: false,
-      websearch: true,
-      context7: true,
-      Task: false,
-      // Allowed: Read, Write, Edit, Glob, Grep, Bash, lsp_*, ls
-    },
   }
 }
 

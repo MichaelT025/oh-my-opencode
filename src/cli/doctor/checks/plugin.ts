@@ -17,7 +17,7 @@ function detectConfigPath(): { path: string; format: "json" | "jsonc" } | null {
 
 function findPluginEntry(plugins: string[]): { entry: string; isPinned: boolean; version: string | null } | null {
   for (const plugin of plugins) {
-    if (plugin === PACKAGE_NAME || plugin.startsWith(`${PACKAGE_NAME}@`)) {
+    if (plugin.includes(PACKAGE_NAME)) {
       const isPinned = plugin.includes("@")
       const version = isPinned ? plugin.split("@")[1] : null
       return { entry: plugin, isPinned, version }
