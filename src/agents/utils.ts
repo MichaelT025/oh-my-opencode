@@ -1,6 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { BuiltinAgentName, AgentOverrideConfig, AgentOverrides, AgentFactory, AgentPromptMetadata } from "./types"
-import type { CategoriesConfig, CategoryConfig } from "../config/schema"
+import type { CategoriesConfig, CategoryConfig, GitMasterConfig } from "../config/schema"
 import { createSisyphusAgent } from "./sisyphus"
 import { createOracleAgent, ORACLE_PROMPT_METADATA } from "./oracle"
 import { createCodeImplementerAgent, CODE_IMPLEMENTER_PROMPT_METADATA } from "./code-implementer"
@@ -14,7 +14,7 @@ import { createOrchestratorSisyphusAgent, orchestratorSisyphusAgent } from "./or
 import { createMomusAgent } from "./momus"
 import type { AvailableAgent } from "./sisyphus-prompt-builder"
 import { deepMerge } from "../shared"
-import { DEFAULT_CATEGORIES } from "../tools/sisyphus-task/constants"
+import { DEFAULT_CATEGORIES } from "../tools/delegate-task/constants"
 import { resolveMultipleSkills } from "../features/opencode-skill-loader/skill-content"
 
 type AgentSource = AgentFactory | AgentConfig
@@ -54,7 +54,8 @@ function isFactory(source: AgentSource): source is AgentFactory {
 export function buildAgent(
   source: AgentSource,
   model?: string,
-  categories?: CategoriesConfig
+  categories?: CategoriesConfig,
+  gitMasterConfig?: GitMasterConfig
 ): AgentConfig {
   const base = isFactory(source) ? source(model) : source
   const categoryConfigs: Record<string, CategoryConfig> = categories
@@ -78,7 +79,7 @@ export function buildAgent(
   }
 
   if (agentWithCategory.skills?.length) {
-    const { resolved } = resolveMultipleSkills(agentWithCategory.skills)
+    const { resolved } = resolveMultipleSkills(agentWithCategory.skills, { gitMasterConfig })
     if (resolved.size > 0) {
       const skillContent = Array.from(resolved.values()).join("\n\n")
       base.prompt = skillContent + (base.prompt ? "\n\n" + base.prompt : "")
@@ -133,7 +134,8 @@ export function createBuiltinAgents(
   agentOverrides: AgentOverrides = {},
   directory?: string,
   systemDefaultModel?: string,
-  categories?: CategoriesConfig
+  categories?: CategoriesConfig,
+  gitMasterConfig?: GitMasterConfig
 ): Record<string, AgentConfig> {
   const result: Record<string, AgentConfig> = {}
   const availableAgents: AvailableAgent[] = []
@@ -152,7 +154,7 @@ export function createBuiltinAgents(
     const override = agentOverrides[agentName]
     const model = override?.model
 
-    let config = buildAgent(source, model, mergedCategories)
+    let config = buildAgent(source, model, mergedCategories, gitMasterConfig)
 
     if (agentName === "librarian" && directory && config.prompt) {
       const envContext = createEnvContext()
@@ -195,7 +197,7 @@ export function createBuiltinAgents(
 
   if (!disabledAgents.includes("orchestrator-sisyphus")) {
     const orchestratorOverride = agentOverrides["orchestrator-sisyphus"]
-    const orchestratorModel = orchestratorOverride?.model
+    const orchestratorModel = orchestratorOverride?.model ?? systemDefaultModel
     let orchestratorConfig = createOrchestratorSisyphusAgent({
       model: orchestratorModel,
       availableAgents,
