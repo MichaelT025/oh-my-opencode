@@ -6,6 +6,7 @@ import {
   type OpenCodeConfigPaths,
 } from "../shared"
 import type { ConfigMergeResult, DetectedConfig, InstallConfig } from "./types"
+import { generateModelConfig } from "./model-fallback"
 
 const OPENCODE_BINARIES = ["opencode", "opencode-desktop"] as const
 
@@ -307,6 +308,7 @@ function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial
 }
 
 export function generateOmoConfig(installConfig: InstallConfig): Record<string, unknown> {
+<<<<<<< HEAD
   const config: Record<string, unknown> = {
     $schema: "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   }
@@ -381,6 +383,9 @@ export function generateOmoConfig(installConfig: InstallConfig): Record<string, 
   }
 
   return config
+=======
+  return generateModelConfig(installConfig)
+>>>>>>> e60ccb93fbb08b8c8d462c8c320ac177482b23fc
 }
 
 export function writeOmoConfig(installConfig: InstallConfig): ConfigMergeResult {
@@ -647,8 +652,28 @@ export function addProviderConfig(config: InstallConfig): ConfigMergeResult {
   }
 }
 
-interface OmoConfigData {
-  agents?: Record<string, { model?: string }>
+function detectProvidersFromOmoConfig(): { hasOpenAI: boolean; hasOpencodeZen: boolean; hasZaiCodingPlan: boolean } {
+  const omoConfigPath = getOmoConfig()
+  if (!existsSync(omoConfigPath)) {
+    return { hasOpenAI: true, hasOpencodeZen: true, hasZaiCodingPlan: false }
+  }
+
+  try {
+    const content = readFileSync(omoConfigPath, "utf-8")
+    const omoConfig = parseJsonc<Record<string, unknown>>(content)
+    if (!omoConfig || typeof omoConfig !== "object") {
+      return { hasOpenAI: true, hasOpencodeZen: true, hasZaiCodingPlan: false }
+    }
+
+    const configStr = JSON.stringify(omoConfig)
+    const hasOpenAI = configStr.includes('"openai/')
+    const hasOpencodeZen = configStr.includes('"opencode/')
+    const hasZaiCodingPlan = configStr.includes('"zai-coding-plan/')
+
+    return { hasOpenAI, hasOpencodeZen, hasZaiCodingPlan }
+  } catch {
+    return { hasOpenAI: true, hasOpencodeZen: true, hasZaiCodingPlan: false }
+  }
 }
 
 export function detectCurrentConfig(): DetectedConfig {
@@ -656,9 +681,11 @@ export function detectCurrentConfig(): DetectedConfig {
     isInstalled: false,
     hasClaude: true,
     isMax20: true,
-    hasChatGPT: true,
+    hasOpenAI: true,
     hasGemini: false,
     hasCopilot: false,
+    hasOpencodeZen: true,
+    hasZaiCodingPlan: false,
   }
 
   const { format, path } = detectConfigFormat()
@@ -679,53 +706,13 @@ export function detectCurrentConfig(): DetectedConfig {
     return result
   }
 
+  // Gemini auth plugin detection still works via plugin presence
   result.hasGemini = plugins.some((p) => p.startsWith("opencode-antigravity-auth"))
 
-  const omoConfigPath = getOmoConfig()
-  if (!existsSync(omoConfigPath)) {
-    return result
-  }
-
-  try {
-    const stat = statSync(omoConfigPath)
-    if (stat.size === 0) {
-      return result
-    }
-
-    const content = readFileSync(omoConfigPath, "utf-8")
-    if (isEmptyOrWhitespace(content)) {
-      return result
-    }
-
-    const omoConfig = parseJsonc<OmoConfigData>(content)
-    if (!omoConfig || typeof omoConfig !== "object") {
-      return result
-    }
-
-    const agents = omoConfig.agents ?? {}
-
-    if (agents["Sisyphus"]?.model === "opencode/glm-4.7-free") {
-      result.hasClaude = false
-      result.isMax20 = false
-    } else if (agents["librarian"]?.model === "opencode/glm-4.7-free") {
-      result.hasClaude = true
-      result.isMax20 = false
-    }
-
-    if (agents["oracle"]?.model?.startsWith("anthropic/")) {
-      result.hasChatGPT = false
-    } else if (agents["oracle"]?.model === "opencode/glm-4.7-free") {
-      result.hasChatGPT = false
-    }
-
-    const hasAnyCopilotModel = Object.values(agents).some(
-      (agent) => agent?.model?.startsWith("github-copilot/")
-    )
-    result.hasCopilot = hasAnyCopilotModel
-
-  } catch {
-    /* intentionally empty - malformed omo config returns defaults from opencode config detection */
-  }
+  const { hasOpenAI, hasOpencodeZen, hasZaiCodingPlan } = detectProvidersFromOmoConfig()
+  result.hasOpenAI = hasOpenAI
+  result.hasOpencodeZen = hasOpencodeZen
+  result.hasZaiCodingPlan = hasZaiCodingPlan
 
   return result
 }

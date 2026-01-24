@@ -17,17 +17,21 @@ const AgentPermissionSchema = z.object({
 })
 
 export const BuiltinAgentNameSchema = z.enum([
-  "Sisyphus",
+  "sisyphus",
+  "prometheus",
   "oracle",
   "librarian",
   "explore",
+<<<<<<< HEAD
   "code-implementer",
   "frontend-ui-ux-engineer",
   "document-writer",
+=======
+>>>>>>> e60ccb93fbb08b8c8d462c8c320ac177482b23fc
   "multimodal-looker",
-  "Metis (Plan Consultant)",
-  "Momus (Plan Reviewer)",
-  "orchestrator-sisyphus",
+  "metis",
+  "momus",
+  "atlas",
 ])
 
 export const BuiltinSkillNameSchema = z.enum([
@@ -39,20 +43,23 @@ export const BuiltinSkillNameSchema = z.enum([
 export const OverridableAgentNameSchema = z.enum([
   "build",
   "plan",
-  "Sisyphus",
-  "Sisyphus-Junior",
+  "sisyphus",
+  "sisyphus-junior",
   "OpenCode-Builder",
-  "Prometheus (Planner)",
-  "Metis (Plan Consultant)",
-  "Momus (Plan Reviewer)",
+  "prometheus",
+  "metis",
+  "momus",
   "oracle",
   "librarian",
   "explore",
+<<<<<<< HEAD
   "code-implementer",
   "frontend-ui-ux-engineer",
   "document-writer",
+=======
+>>>>>>> e60ccb93fbb08b8c8d462c8c320ac177482b23fc
   "multimodal-looker",
-  "orchestrator-sisyphus",
+  "atlas",
 ])
 
 export const AgentNameSchema = BuiltinAgentNameSchema
@@ -89,7 +96,7 @@ export const HookNameSchema = z.enum([
   "delegate-task-retry",
   "prometheus-md-only",
   "start-work",
-  "sisyphus-orchestrator",
+  "atlas",
 ])
 
 export const BuiltinCommandNameSchema = z.enum([
@@ -123,20 +130,23 @@ export const AgentOverrideConfigSchema = z.object({
 export const AgentOverridesSchema = z.object({
   build: AgentOverrideConfigSchema.optional(),
   plan: AgentOverrideConfigSchema.optional(),
-  Sisyphus: AgentOverrideConfigSchema.optional(),
-  "Sisyphus-Junior": AgentOverrideConfigSchema.optional(),
+  sisyphus: AgentOverrideConfigSchema.optional(),
+  "sisyphus-junior": AgentOverrideConfigSchema.optional(),
   "OpenCode-Builder": AgentOverrideConfigSchema.optional(),
-  "Prometheus (Planner)": AgentOverrideConfigSchema.optional(),
-  "Metis (Plan Consultant)": AgentOverrideConfigSchema.optional(),
-  "Momus (Plan Reviewer)": AgentOverrideConfigSchema.optional(),
+  prometheus: AgentOverrideConfigSchema.optional(),
+  metis: AgentOverrideConfigSchema.optional(),
+  momus: AgentOverrideConfigSchema.optional(),
   oracle: AgentOverrideConfigSchema.optional(),
   librarian: AgentOverrideConfigSchema.optional(),
   explore: AgentOverrideConfigSchema.optional(),
+<<<<<<< HEAD
   "code-implementer": AgentOverrideConfigSchema.optional(),
   "frontend-ui-ux-engineer": AgentOverrideConfigSchema.optional(),
   "document-writer": AgentOverrideConfigSchema.optional(),
+=======
+>>>>>>> e60ccb93fbb08b8c8d462c8c320ac177482b23fc
   "multimodal-looker": AgentOverrideConfigSchema.optional(),
-  "orchestrator-sisyphus": AgentOverrideConfigSchema.optional(),
+  atlas: AgentOverrideConfigSchema.optional(),
 })
 
 export const ClaudeCodeConfigSchema = z.object({
@@ -157,7 +167,9 @@ export const SisyphusAgentConfigSchema = z.object({
 })
 
 export const CategoryConfigSchema = z.object({
-  model: z.string(),
+  /** Human-readable description of the category's purpose. Shown in delegate_task prompt. */
+  description: z.string().optional(),
+  model: z.string().optional(),
   variant: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
   top_p: z.number().min(0).max(1).optional(),
@@ -166,10 +178,12 @@ export const CategoryConfigSchema = z.object({
     type: z.enum(["enabled", "disabled"]),
     budgetTokens: z.number().optional(),
   }).optional(),
-  reasoningEffort: z.enum(["low", "medium", "high"]).optional(),
+  reasoningEffort: z.enum(["low", "medium", "high", "xhigh"]).optional(),
   textVerbosity: z.enum(["low", "medium", "high"]).optional(),
   tools: z.record(z.string(), z.boolean()).optional(),
   prompt_append: z.string().optional(),
+  /** Mark agent as unstable - forces background mode for monitoring. Auto-enabled for gemini models. */
+  is_unstable_agent: z.boolean().optional(),
 })
 
 export const BuiltinCategoryNameSchema = z.enum([
@@ -177,9 +191,9 @@ export const BuiltinCategoryNameSchema = z.enum([
   "ultrabrain",
   "artistry",
   "quick",
-  "most-capable",
+  "unspecified-low",
+  "unspecified-high",
   "writing",
-  "general",
 ])
 
 export const CategoriesConfigSchema = z.record(z.string(), CategoryConfigSchema)
@@ -283,8 +297,8 @@ export const RalphLoopConfigSchema = z.object({
 
 export const BackgroundTaskConfigSchema = z.object({
   defaultConcurrency: z.number().min(1).optional(),
-  providerConcurrency: z.record(z.string(), z.number().min(1)).optional(),
-  modelConcurrency: z.record(z.string(), z.number().min(1)).optional(),
+  providerConcurrency: z.record(z.string(), z.number().min(0)).optional(),
+  modelConcurrency: z.record(z.string(), z.number().min(0)).optional(),
   /** Stale timeout in milliseconds - interrupt tasks with no activity for this duration (default: 180000 = 3 minutes, minimum: 60000 = 1 minute) */
   staleTimeoutMs: z.number().min(60000).optional(),
 })
